@@ -1,0 +1,26 @@
+<!DOCTYPE html><html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>电子卖场采集 · 登录</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f0f2f5;display:flex;align-items:center;justify-content:center;min-height:100vh}
+.card{background:#fff;border-radius:12px;padding:40px;width:400px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+h1{font-size:22px;font-weight:500;color:#1a73e8;margin-bottom:8px;text-align:center}
+.sub{font-size:13px;color:#999;text-align:center;margin-bottom:28px}
+label{display:block;font-size:13px;color:#555;margin-bottom:6px}
+input{width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;margin-bottom:16px}
+input:focus{border-color:#1a73e8}
+button{width:100%;padding:12px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-weight:500}
+button:hover{background:#1557b0}
+.error{color:#c5221f;font-size:13px;text-align:center;margin-top:12px}
+</style></head>
+<body>
+<div class="card">
+<h1>电子卖场合同采集</h1>
+<div class="sub">江西省政府采购电子卖场</div>
+<form method="POST">
+<label>用户名</label><input name="username" required autofocus>
+<label>密码</label><input name="password" type="password" required>
+<button type="submit">登 录</button>
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+</form></div></body></html>

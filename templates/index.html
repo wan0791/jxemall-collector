@@ -1,0 +1,422 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>电子卖场采集 · Dashboard</title>
+<style>
+:root {
+  --bg: #f8f9fa; --surface: #fff; --surface2: #f8f9fa;
+  --text: #202124; --text2: #5f6368; --text3: #9aa0a6;
+  --border: #dadce0; --border2: #f1f3f4; --border3: #e8eaed;
+  --primary: #1a73e8; --primary-hover: #1557b0;
+  --success: #0f9d58; --success-hover: #0b8043;
+  --danger: #c5221f; --danger-hover: #a50e0e;
+  --danger-bg: #fce8e6; --starred: #e67e22; --ignored: #999;
+  --shadow: 0 1px 3px rgba(0,0,0,.08); --hover-bg: #e8f0fe;
+  --comp-bg: #e2efda;
+}
+[data-theme="dark"] {
+  --bg: #1a1a2e; --surface: #222240; --surface2: #2a2a4a;
+  --text: #e0e0e0; --text2: #a0a0b0; --text3: #666;
+  --border: #3a3a5a; --border2: #2a2a4a; --border3: #3a3a5a;
+  --primary: #5b9cf5; --primary-hover: #7ab3ff;
+  --success: #3cb371; --success-hover: #4ecb7e;
+  --danger: #ff6b6b; --danger-hover: #ff8888;
+  --danger-bg: #3a2020; --shadow: 0 1px 3px rgba(0,0,0,.3);
+  --hover-bg: #2a2a4a; --comp-bg: #2a3a2a;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app-bar{background:var(--surface);box-shadow:var(--shadow);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.app-bar h1{font-size:18px;font-weight:500;color:var(--primary)}
+.app-bar .right{display:flex;align-items:center;gap:16px;font-size:13px;color:var(--text2)}
+.app-bar a{color:var(--primary);text-decoration:none;font-weight:500}
+.theme-btn{cursor:pointer;background:none;border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:13px;color:var(--text2);transition:all .2s}
+.theme-btn:hover{background:var(--surface2);color:var(--text)}
+.main{max-width:100%;margin:0 auto;padding:24px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.card{background:var(--surface);border-radius:12px;padding:20px 24px;box-shadow:var(--shadow)}
+.card .num{font-size:36px;font-weight:400;color:var(--primary);line-height:1.2}
+.card .num.comp{color:var(--success)}.card .num.starred{color:var(--starred)}.card .num.ignored{color:var(--ignored)}
+.card .label{font-size:12px;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+.toolbar{background:var(--surface);border-radius:12px;padding:16px 20px;margin-bottom:16px;box-shadow:var(--shadow);display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.toolbar .group{display:flex;flex-direction:column;gap:4px}
+.toolbar label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.toolbar input,.toolbar select{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;background:var(--surface);color:var(--text)}
+.toolbar input:focus,.toolbar select:focus{border-color:var(--primary)}
+.toolbar button{padding:8px 20px;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap;height:36px}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-hover)}
+.btn-success{background:var(--success);color:#fff}.btn-success:hover{background:var(--success-hover)}
+.btn-outline{background:var(--surface);color:var(--primary);border:1px solid var(--border)!important}.btn-outline:hover{background:var(--surface2)}
+.btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{background:var(--danger-hover)}
+.toggle-wrap{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)}
+.toggle-wrap input[type=checkbox]{width:18px;height:18px;accent-color:var(--success)}
+.table-wrap{background:var(--surface);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:1600px}
+thead{background:var(--surface2)}
+th{padding:10px 8px;text-align:left;font-weight:500;color:var(--text2);font-size:11px;text-transform:uppercase;border-bottom:2px solid var(--border3);white-space:nowrap}
+td{padding:8px;border-bottom:1px solid var(--border2);vertical-align:top;word-wrap:break-word}
+td.editable{cursor:pointer;transition:background .15s}
+td.editable:hover{background:var(--hover-bg)}
+td.editable input{width:100%;padding:4px 6px;border:2px solid var(--primary);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);outline:none;font-family:inherit}
+tr:hover{background:var(--hover-bg)}
+tr.comp-row{background:var(--comp-bg)}
+a.ext{color:var(--primary);text-decoration:none;font-weight:500}a.ext:hover{text-decoration:underline}
+.empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px}
+/* Calendar */
+.cal-popup{display:none;position:absolute;z-index:400;background:var(--surface);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.2);padding:12px;width:260px;font-size:13px;user-select:none}
+.cal-popup.show{display:block}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-head button{cursor:pointer;border:none;background:none;font-size:16px;color:var(--text);padding:4px 8px;border-radius:6px}
+.cal-head button:hover{background:var(--surface2)}
+.cal-head .cal-month{font-weight:500;color:var(--text)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;gap:2px}
+.cal-grid .cal-dow{font-size:11px;color:var(--text2);padding:4px 0}
+.cal-grid .cal-day{cursor:pointer;padding:6px 0;border-radius:6px;position:relative;color:var(--text)}
+.cal-grid .cal-day:hover{background:var(--hover-bg)}
+.cal-grid .cal-day.off{color:var(--text3);cursor:default}
+.cal-grid .cal-day.today{border:1px solid var(--primary)}
+.cal-grid .cal-day.sel{background:var(--primary);color:#fff}
+.cal-dot{display:block;width:5px;height:5px;border-radius:50%;background:var(--primary);margin:2px auto 0}
+.cal-day.sel .cal-dot{background:#fff}
+.dp-input{cursor:pointer;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;background:var(--surface);color:var(--text);width:133px}
+.dp-input:focus{border-color:var(--primary)}
+/* Pagination */
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:16px;flex-wrap:wrap}
+.pager button,.pager span{padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);cursor:pointer;transition:all .15s;min-width:36px;text-align:center}
+.pager button:hover:not(:disabled){background:var(--primary);color:#fff;border-color:var(--primary)}
+.pager button:disabled{opacity:.3;cursor:default}
+.pager .current{background:var(--primary);color:#fff;border-color:var(--primary);font-weight:500}
+.pager .info{color:var(--text2);border:none;background:none}
+/* Modal */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.32);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border-radius:12px;padding:28px;width:520px;max-width:90vw;box-shadow:0 8px 24px rgba(0,0,0,.16);max-height:85vh;overflow-y:auto}
+.modal h3{font-weight:400;font-size:18px;margin-bottom:20px;color:var(--text)}
+.modal .row{display:flex;gap:12px;align-items:flex-end;margin-bottom:14px}
+.modal .field{flex:1}.modal .field label{display:block;font-size:12px;color:var(--text2);margin-bottom:4px}
+.modal input,.modal select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;background:var(--surface);color:var(--text)}
+.modal .shortcuts{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.modal .shortcuts button{padding:6px 14px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:20px;font-size:12px;cursor:pointer;transition:.15s}
+.modal .shortcuts button:hover,.modal .shortcuts button.active{background:var(--hover-bg);border-color:var(--primary);color:var(--primary)}
+.modal .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.modal .chip{padding:4px 12px;border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;transition:.15s;user-select:none;color:var(--text)}
+.modal .chip:hover,.modal .chip.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.modal .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.btn-sm{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:none;transition:.15s}
+.btn-del{background:var(--danger-bg);color:var(--danger)}.btn-del:hover{background:#f8d7da}
+@media(max-width:768px){.cards{grid-template-columns:repeat(2,1fr)}.toolbar{flex-direction:column}}
+</style></head>
+<body>
+<div class="app-bar">
+<h1>电子卖场合同采集</h1>
+<div class="right">
+<button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙 暗色</button>
+{{ user }} &middot; <a href="/logout">退出</a>
+</div></div><div class="main">
+<div class="cards">
+<div class="card"><div class="num" id="statTotal">-</div><div class="label">商品条目</div></div>
+<div class="card"><div class="num" id="statContracts" style="color:var(--text)">-</div><div class="label">合同总数</div></div>
+<div class="card"><div class="num starred" id="statStarred">-</div><div class="label">已关注(电脑)</div></div>
+<div class="card" id="progressCard"><div class="num" id="statTask" style="font-size:24px">空闲</div><div id="progressBar" style="display:none;margin-top:8px;height:6px;background:var(--border2);border-radius:3px;overflow:hidden"><div id="progressFill" style="height:100%;background:var(--primary);border-radius:3px;width:0%;transition:width .3s"></div></div><div id="progressInfo" style="display:none;font-size:11px;color:var(--text2);margin-top:4px"></div><div class="label">任务状态</div></div>
+<div class="card" style="grid-column:span 2;padding:14px 20px;display:flex;align-items:center;gap:24px;font-size:13px;color:var(--text2)">
+<span>AI Token: <b id="tokTotal" style="color:var(--text)">-</b></span>
+<span>调用: <b id="tokCalls" style="color:var(--text)">-</b> 次</span>
+<span>累计费用: <b id="tokCost" style="color:var(--primary)">-</b></span>
+</div>
+</div>
+<div class="toolbar">
+<div class="group"><label>开始</label><input type="text" class="dp-input" id="fFrom"></div>
+<div class="group"><label>结束</label><input type="text" class="dp-input" id="fTo"></div>
+<div class="group"><label>城市</label><select id="fCity"><option value="">全部</option><option value="南昌">南昌</option><option value="九江">九江</option><option value="上饶">上饶</option><option value="鹰潭">鹰潭</option><option value="景德镇">景德镇</option><option value="宜春">宜春</option><option value="萍乡">萍乡</option></select></div>
+<div class="group"><label>标记</label><select id="fMark"><option value="starred" selected>★ 关注</option><option value="">全部</option><option value="ignored">⊘ 不关注</option><option value="unmarked">☆ 未标记</option></select></div>
+<div class="group"><label>搜索</label><input type="text" id="fSearch" placeholder="采购单位/供应商/产品..." style="width:200px"></div>
+<button class="btn-primary" onclick="goPage(1)">查询</button>
+<button class="btn-success" onclick="showCollect()">手动采集</button>
+<button class="btn-outline" onclick="showExport()">导出Excel</button>
+<button class="btn-outline" onclick="showClassify()" style="color:var(--success);border-color:var(--success)">AI 分类</button>
+{% if role == 'admin' %}<button class="btn-outline" onclick="showUsers()">用户管理</button>{% endif %}
+</div>
+<div id="batchBar" style="display:none;background:var(--surface);border-radius:12px;padding:10px 20px;margin-bottom:8px;box-shadow:var(--shadow)">
+<span id="batchCount" style="font-size:13px;color:var(--text)"></span>
+<button class="btn-sm" style="background:var(--starred);color:#fff" onclick="batchMark('starred')">★ 关注</button>
+<button class="btn-sm" style="background:var(--ignored);color:#fff" onclick="batchMark('ignored')">⊘ 不关注</button>
+<button class="btn-sm" style="background:var(--surface2);color:var(--text)" onclick="batchMark('')">☆ 清除</button>
+<button class="btn-sm btn-del" onclick="batchDelete()">删除</button>
+<button class="btn-sm" style="background:var(--surface2);color:var(--text)" onclick="clearSelection()">取消选择</button>
+</div>
+<div id="calPopup" class="cal-popup">
+<div class="cal-head"><button onclick="calShift(-1)">‹</button><span class="cal-month" id="calMonth"></span><button onclick="calShift(1)">›</button></div>
+<div class="cal-grid"><span class="cal-dow">日</span><span class="cal-dow">一</span><span class="cal-dow">二</span><span class="cal-dow">三</span><span class="cal-dow">四</span><span class="cal-dow">五</span><span class="cal-dow">六</span></div>
+<div class="cal-grid" id="calDays"></div></div>
+
+<div class="table-wrap">
+<div id="loading" class="empty">加载中...</div>
+<div id="empty" class="empty" style="display:none">暂无数据</div>
+<div class="table-scroll"><table id="tbl" style="display:none"><thead><tr>
+<th style="width:34px"><input type="checkbox" id="checkAll" onchange="toggleAll(this)" title="全选"></th>
+<th style="width:34px">标记</th><th style="width:200px">合同编号</th><th style="width:280px">标题</th>
+<th style="width:80px">地区</th><th style="width:160px">采购单位</th><th style="width:160px">供货商</th>
+<th style="width:160px">产品名称</th><th style="width:120px">规格型号</th><th style="width:55px">数量</th>
+<th style="width:70px">单价</th><th style="width:70px">总价</th><th style="width:45px">品类</th>
+<th style="width:70px">品牌</th><th style="width:100px">类型</th>
+</tr></thead><tbody id="tbody"></tbody></table></div>
+<div id="pager" class="pager" style="display:none"></div>
+</div></div>
+
+<div class="modal-overlay" id="exportModal"><div class="modal">
+<h3>导出 Excel</h3>
+<div class="row"><div class="field"><label>开始日期</label><input type="text" class="dp-input" id="eFrom"></div><div class="field"><label>结束日期</label><input type="text" class="dp-input" id="eTo"></div></div>
+<div class="field" style="margin-bottom:14px"><label>城市</label><select id="eCity"><option value="">全部</option><option value="南昌">南昌</option><option value="九江">九江</option><option value="上饶">上饶</option><option value="鹰潭">鹰潭</option><option value="景德镇">景德镇</option><option value="宜春">宜春</option><option value="萍乡">萍乡</option></select></div>
+<div class="actions"><button class="btn-outline" onclick="document.getElementById('exportModal').classList.remove('show')">取消</button><button class="btn-primary" onclick="doExport()">导出</button></div>
+</div></div>
+
+<div class="modal-overlay" id="classifyModal"><div class="modal">
+<h3>AI 分类 <span style="font-size:12px;font-weight:400;color:var(--text2)">（DeepSeek V4 Flash · 已分类自动跳过）</span></h3>
+<div class="row"><div class="field"><label>开始日期</label><input type="text" class="dp-input" id="lcFrom"></div><div class="field"><label>结束日期</label><input type="text" class="dp-input" id="lcTo"></div></div>
+<div class="toggle-wrap" style="margin-bottom:14px"><label><input type="checkbox" id="lcForce"> 强制重新分类（已分类的也重跑）</label></div>
+<div class="field" style="margin-bottom:14px"><label>限定城市（可选）</label><select id="lcCity"><option value="">全部</option><option value="南昌">南昌</option><option value="九江">九江</option><option value="上饶">上饶</option><option value="鹰潭">鹰潭</option><option value="景德镇">景德镇</option><option value="宜春">宜春</option><option value="萍乡">萍乡</option></select></div>
+<div class="actions"><button class="btn-outline" onclick="document.getElementById('classifyModal').classList.remove('show')">取消</button><button class="btn-primary" onclick="startClassify()">开始 AI 分类</button></div>
+</div></div>
+
+<div class="modal-overlay" id="collectModal"><div class="modal">
+<h3>手动采集 <span style="font-size:12px;font-weight:400;color:var(--text2)">（日期范围不超过30天）</span></h3>
+<div class="shortcuts">
+<button onclick="quickDate('today')">今天</button>
+<button onclick="quickDate('yesterday')">昨天</button>
+<button onclick="quickDate('3days')">近3天</button>
+<button onclick="quickDate('7days')">近7天</button>
+</div>
+<div class="row"><div class="field"><label>开始日期</label><input type="text" class="dp-input" id="cFrom"></div><div class="field"><label>结束日期</label><input type="text" class="dp-input" id="cTo"></div></div>
+<div class="field" style="margin-bottom:14px"><label>目标城市（不选=全部7城）</label>
+<div class="chips" id="cityChips"><span class="chip" data-v="南昌">南昌</span><span class="chip" data-v="九江">九江</span><span class="chip" data-v="上饶">上饶</span><span class="chip" data-v="鹰潭">鹰潭</span><span class="chip" data-v="景德镇">景德镇</span><span class="chip" data-v="宜春">宜春</span><span class="chip" data-v="萍乡">萍乡</span></div></div>
+<div class="actions">
+<button class="btn-outline" onclick="document.getElementById('collectModal').classList.remove('show')">取消</button>
+<button class="btn-primary" id="btnStart" onclick="startCollect()">开始采集</button>
+</div></div></div>
+
+<div class="modal-overlay" id="userModal"><div class="modal" style="width:600px">
+<h3>用户管理</h3>
+<div style="margin-bottom:16px;display:flex;gap:8px">
+<input type="text" id="newUsername" placeholder="用户名" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;background:var(--surface);color:var(--text)">
+<input type="password" id="newPassword" placeholder="密码（至少4位）" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;background:var(--surface);color:var(--text)">
+<select id="newRole" style="width:80px;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;background:var(--surface);color:var(--text)"><option value="user">user</option><option value="admin">admin</option></select>
+<button class="btn-primary" onclick="doCreateUser()" style="white-space:nowrap">添加</button>
+</div>
+<div style="max-height:320px;overflow-y:auto">
+<table style="width:100%;font-size:13px;border-collapse:collapse"><thead><tr>
+<th style="text-align:left;padding:8px;border-bottom:2px solid var(--border3);color:var(--text2);font-size:11px">ID</th>
+<th style="text-align:left;padding:8px;border-bottom:2px solid var(--border3);color:var(--text2);font-size:11px">用户名</th>
+<th style="text-align:left;padding:8px;border-bottom:2px solid var(--border3);color:var(--text2);font-size:11px">角色</th>
+<th style="text-align:left;padding:8px;border-bottom:2px solid var(--border3);color:var(--text2);font-size:11px">操作</th>
+</tr></thead><tbody id="userTbody"></tbody></table>
+</div>
+<div class="actions" style="margin-top:16px">
+<button class="btn-outline" onclick="document.getElementById('userModal').classList.remove('show')">关闭</button>
+</div>
+</div></div>
+
+<script>
+var PAGE=1,PAGE_SIZE=50,TOTAL=0;
+
+// === Theme ===
+function initTheme(){var t=localStorage.getItem('theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);document.getElementById('themeBtn').textContent=t==='dark'?'☀️ 亮色':'🌙 暗色'}
+function toggleTheme(){var t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',t);localStorage.setItem('theme',t);document.getElementById('themeBtn').textContent=t==='dark'?'☀️ 亮色':'🌙 暗色'}
+initTheme();
+
+// === Load ===
+function goPage(p){PAGE=p;loadRecords()}
+function loadRecords(){
+  document.getElementById('loading').style.display='block';document.getElementById('tbl').style.display='none';document.getElementById('empty').style.display='none';document.getElementById('pager').style.display='none';
+  var f=document.getElementById('fFrom').value,t=document.getElementById('fTo').value,city=document.getElementById('fCity').value,mark=document.getElementById('fMark').value,search=document.getElementById('fSearch').value;
+  fetch('/api/contracts?from='+encodeURIComponent(f)+'&to='+encodeURIComponent(t)+'&city='+encodeURIComponent(city)+'&mark='+encodeURIComponent(mark)+'&search='+encodeURIComponent(search)+'&page='+PAGE+'&page_size='+PAGE_SIZE)
+  .then(function(r){return r.json()}).then(function(d){
+    TOTAL=d.total||0;
+    if(!d.records||d.records.length===0){document.getElementById('loading').style.display='none';document.getElementById('empty').style.display='block';renderPager();return}
+    var h='';
+    d.records.forEach(function(r){
+      var mk=r.mark_status||'none',mi={starred:'★',ignored:'⊘',none:'☆'}[mk]||'☆',mc={starred:'color:var(--starred)',ignored:'color:var(--ignored)',none:'color:var(--text3)'}[mk];
+      var title=esc(r.title);
+      var tl=r.detail_url?'<a class="ext" href="'+r.detail_url+'" target="_blank" title="'+title+'">'+title.substring(0,30)+(title.length>30?'...':'')+'</a>':'<span style="color:var(--text3)">-</span>';
+      var up=formatPrice(r.item_unit_price),tp=formatPrice(r.item_total_price);
+      var cat=r.category||'';
+      var catStyle=cat==='DT'?'background:#e3f2fd;color:#1565c0;padding:1px 6px;border-radius:4px;font-size:11px':cat==='NB'?'background:#fce4ec;color:#c62828;padding:1px 6px;border-radius:4px;font-size:11px':cat==='AIO'?'background:#e8f5e9;color:#2e7d32;padding:1px 6px;border-radius:4px;font-size:11px':'';
+      h+='<tr class="'+(r.is_computer?'comp-row':'')+'" data-sn="'+esc(r.serial_num)+'" data-in="'+esc(r.item_name)+'">'
+        +'<td><input type="checkbox" class="row-check" data-sn="'+esc(r.serial_num)+'" data-in="'+esc(r.item_name)+'" onchange="updateBatchBar()"></td>'
+        +'<td style="'+mc+';text-align:center;font-size:14px;cursor:pointer" onclick="cycleMark(this,\''+r.serial_num+'\',\''+(r.item_name||'').replace(/'/g,"\\'")+'\')">'+mi+'</td>'
+        +'<td style="font-size:11px">'+(r.contract_no?esc(r.contract_no):'<span style="color:var(--text3)">-</span>')+'</td>'
+        +'<td>'+tl+'</td>'
+        +'<td>'+esc(r.city_name)+'/'+esc(r.district_name)+'</td>'
+        +'<td class="editable" data-field="buyer" data-sn="'+esc(r.serial_num)+'" data-in="'+esc(r.item_name)+'" onclick="startEdit(this)">'+(r.buyer?esc(r.buyer):'<span style="color:var(--text3)">-</span>')+'</td>'
+        +'<td class="editable" data-field="supplier" data-sn="'+esc(r.serial_num)+'" data-in="'+esc(r.item_name)+'" onclick="startEdit(this)">'+(r.supplier?esc(r.supplier):'<span style="color:var(--text3)">-</span>')+'</td>'
+        +'<td class="editable" data-field="item_name" data-sn="'+esc(r.serial_num)+'" data-in="'+esc(r.item_name)+'" onclick="startEdit(this)">'+(r.item_name?esc(r.item_name):'<span style="color:var(--text3)">-</span>')+'</td>'
+        +'<td>'+(r.item_spec?esc(r.item_spec):'<span style="color:var(--text3)">-</span>')+'</td>'
+        +'<td style="text-align:right">'+(r.item_qty||0)+'</td>'
+        +'<td style="text-align:right" class="editable" data-field="item_unit_price" data-sn="'+esc(r.serial_num)+'" data-in="'+esc(r.item_name)+'" onclick="startEdit(this)">'+up+'</td>'
+        +'<td style="text-align:right">'+tp+'</td>'
+        +'<td>'+(cat?'<span style="'+catStyle+'">'+cat+'</span>':'<span style="color:var(--text3)">-</span>')+'</td>'
+        +'<td>'+(r.brand?esc(r.brand):'<span style="color:var(--text3)">-</span>')+'</td>'
+        +'<td style="font-size:11px">'+esc(r.announcement_type)+'</td>'
+        +'</tr>';
+    });
+    document.getElementById('tbody').innerHTML=h;
+    document.getElementById('loading').style.display='none';document.getElementById('tbl').style.display='table';
+    renderPager();
+  }).catch(function(e){document.getElementById('loading').textContent='加载失败: '+e});
+}
+
+function esc(s){if(!s)return'';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function formatPrice(v){if(!v||v==='0'||v===0)return '<span style="color:var(--text3)">-</span>';var n=parseFloat(v);if(isNaN(n))return '<span style="color:var(--text3)">-</span>';if(n>=10000){return (n/10000).toFixed(2)+'万'}return n.toFixed(2)}
+
+// === Pagination ===
+function renderPager(){
+  var totalPages=Math.ceil(TOTAL/PAGE_SIZE);
+  if(totalPages<=1){document.getElementById('pager').style.display='none';return}
+  document.getElementById('pager').style.display='flex';
+  var h='<button onclick="goPage(1)"'+(PAGE<=1?' disabled':'')+'>«</button>';
+  h+='<button onclick="goPage('+(PAGE-1)+')"'+(PAGE<=1?' disabled':'')+'>‹</button>';
+  var start=Math.max(1,PAGE-2),end=Math.min(totalPages,PAGE+2);
+  if(start>1){h+='<span>1</span>';if(start>2)h+='<span class="info">…</span>'}
+  for(var i=start;i<=end;i++){h+='<button class="'+(i===PAGE?'current':'')+'" onclick="goPage('+i+')">'+i+'</button>'}
+  if(end<totalPages){if(end<totalPages-1)h+='<span class="info">…</span>';h+='<span>'+totalPages+'</span>'}
+  h+='<button onclick="goPage('+(PAGE+1)+')"'+(PAGE>=totalPages?' disabled':'')+'>›</button>';
+  h+='<button onclick="goPage('+totalPages+')"'+(PAGE>=totalPages?' disabled':'')+'>»</button>';
+  h+='<span class="info">共 '+TOTAL+' 条</span>';
+  document.getElementById('pager').innerHTML=h;
+}
+
+// === Inline Edit ===
+var editingCell=null,_editBackup='';
+function startEdit(cell){
+  if(editingCell){
+    if(editingCell.cell===cell){cell.querySelector('input').focus();return}
+    cancelEdit();
+  }
+  var field=cell.dataset.field,sn=cell.dataset.sn,iname=cell.dataset.in;
+  var raw=cell.textContent.replace(/^-$/,'').trim();
+  if(field==='item_unit_price'&&raw.indexOf('万')>0){raw=String(Math.round(parseFloat(raw)*10000))}
+  var input='<div style="display:flex;gap:4px;align-items:center">';
+  input+='<input value="'+raw.replace(/"/g,'&quot;')+'" style="flex:1;min-width:60px" onkeydown="if(event.key===\'Enter\')saveEdit(this);if(event.key===\'Escape\')cancelEdit()">';
+  input+='<button style="cursor:pointer;border:none;background:var(--success);color:#fff;border-radius:4px;width:24px;height:24px;font-size:14px;line-height:1;padding:0" onclick="saveEdit(this)" title="确认">✓</button>';
+  input+='<button style="cursor:pointer;border:none;background:var(--danger);color:#fff;border-radius:4px;width:24px;height:24px;font-size:14px;line-height:1;padding:0" onclick="cancelEdit()" title="取消">✕</button>';
+  input+='</div>';
+  _editBackup=cell.innerHTML;
+  cell.innerHTML=input;
+  cell.querySelector('input').focus();
+  editingCell={cell:cell,field:field,sn:sn,iname:iname};
+}
+function cancelEdit(){if(!editingCell)return;editingCell.cell.innerHTML=_editBackup;editingCell=null}
+function saveEdit(btn){
+  if(!editingCell)return;
+  var inp=editingCell.cell.querySelector('input');
+  var val=inp.value.trim(),field=editingCell.field,sn=editingCell.sn,iname=editingCell.iname;
+  editingCell=null;
+  fetch('/api/edit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({serial_num:sn,item_name:iname,field:field,value:val})}).then(function(r){return r.json()}).then(function(d){if(d.ok)goPage(PAGE)});
+}
+
+// === Mark ===
+function cycleMark(el,sn,iname){
+  var cur={starred:'ignored',ignored:'',none:'starred','':'starred'};
+  var nxt=cur[el.textContent.trim().replace(/☆/,'none')]||'starred';
+  fetch('/api/mark',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({serial_num:sn,item_name:iname,status:nxt})}).then(function(r){return r.json()}).then(function(d){if(d.ok)goPage(PAGE)});
+}
+
+// === Batch ===
+function toggleAll(cb){var cs=document.querySelectorAll('.row-check');cs.forEach(function(c){c.checked=cb.checked});updateBatchBar()}
+function updateBatchBar(){var cs=document.querySelectorAll('.row-check:checked');var n=cs.length;var bar=document.getElementById('batchBar');if(n>0){bar.style.display='flex';bar.style.flexWrap='wrap';bar.style.alignItems='center';bar.style.gap='8px';document.getElementById('batchCount').textContent='已选 '+n+' 条'}else{bar.style.display='none';document.getElementById('checkAll').checked=false}}
+function getSelected(){var cs=document.querySelectorAll('.row-check:checked');var keys=[];cs.forEach(function(c){keys.push({serial_num:c.dataset.sn,item_name:c.dataset.in})});return keys}
+function clearSelection(){document.querySelectorAll('.row-check').forEach(function(c){c.checked=false});updateBatchBar()}
+function batchMark(status){var keys=getSelected();if(!keys.length)return;fetch('/api/batch/mark',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keys:keys,status:status})}).then(function(r){return r.json()}).then(function(d){if(d.ok){clearSelection();goPage(PAGE)}})}
+function batchDelete(){if(!confirm('确认删除选中的 '+getSelected().length+' 条？'))return;var keys=getSelected();if(!keys.length)return;fetch('/api/batch/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keys:keys})}).then(function(r){return r.json()}).then(function(d){if(d.ok){clearSelection();goPage(PAGE)}})}
+
+// === Collection Modal ===
+function quickDate(v){var d=new Date(),f=document.getElementById('cFrom'),t=document.getElementById('cTo'),fmt=function(dd){return dd.toISOString().slice(0,10)};if(v=='today'){f.value=fmt(d);t.value=fmt(d)}else if(v=='yesterday'){d.setDate(d.getDate()-1);f.value=fmt(d);t.value=fmt(d)}else if(v=='3days'){t.value=fmt(d);d.setDate(d.getDate()-2);f.value=fmt(d)}else if(v=='7days'){t.value=fmt(d);d.setDate(d.getDate()-6);f.value=fmt(d)}}
+function showClassify(){var d=new Date();var t=d.toISOString().slice(0,10);d.setDate(d.getDate()-7);document.getElementById('lcFrom').value=d.toISOString().slice(0,10);document.getElementById('lcTo').value=t;document.getElementById('classifyModal').classList.add('show')}
+function startClassify(){var from=document.getElementById('lcFrom').value,to=document.getElementById('lcTo').value,city=document.getElementById('lcCity').value||null,force=document.getElementById('lcForce').checked;fetch('/api/classify/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:from,to:to,city:city,force:force})}).then(function(r){return r.json()}).then(function(d){document.getElementById('classifyModal').classList.remove('show');alert(d.msg);pollProgress()})}
+
+function showCollect(){var d=new Date();var t=d.toISOString().slice(0,10);d.setDate(d.getDate()-15);document.getElementById('cFrom').value=d.toISOString().slice(0,10);document.getElementById('cTo').value=t;document.querySelectorAll('#cityChips .chip').forEach(function(c){c.classList.remove('on')});document.getElementById('collectModal').classList.add('show')}
+document.getElementById('cityChips').addEventListener('click',function(e){if(e.target.classList.contains('chip'))e.target.classList.toggle('on')});
+function getCities(){var cs=[];document.querySelectorAll('#cityChips .chip.on').forEach(function(c){cs.push(c.dataset.v)});return cs.length?cs:null}
+function startCollect(){var f=document.getElementById('cFrom').value,t=document.getElementById('cTo').value;var days=(new Date(t)-new Date(f))/86400000;if(days>30){alert('日期范围不能超过30天');return}if(days<0){alert('开始日期不能晚于结束日期');return}var cities=getCities();fetch('/api/collect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:f,to:t,cities:cities})}).then(function(r){return r.json()}).then(function(d){alert(d.msg);document.getElementById('collectModal').classList.remove('show');pollProgress()})}
+
+// === Export ===
+function showExport(){var d=new Date();var t=d.toISOString().slice(0,10);d.setDate(d.getDate()-15);document.getElementById('eFrom').value=d.toISOString().slice(0,10);document.getElementById('eTo').value=t;document.getElementById('eCity').value=document.getElementById('fCity').value;document.getElementById('exportModal').classList.add('show')}
+function doExport(){var f=document.getElementById('eFrom').value,t=document.getElementById('eTo').value,city=document.getElementById('eCity').value;document.getElementById('exportModal').classList.remove('show');window.open('/api/export?from='+encodeURIComponent(f)+'&to='+encodeURIComponent(t)+'&city='+encodeURIComponent(city))}
+
+// === Progress ===
+var WAS_RUNNING=false;
+function pollProgress(){fetch('/api/progress').then(function(r){return r.json()}).then(function(d){
+  var now=d.running,pct=0;
+  if(now&&d.total>0){pct=Math.round(d.done/d.total*100);document.getElementById('statTask').textContent=pct+'%';document.getElementById('progressBar').style.display='block';document.getElementById('progressFill').style.width=pct+'%';document.getElementById('progressInfo').style.display='block';document.getElementById('progressInfo').textContent=(d.district||'')+' ('+d.done+'/'+d.total+')';WAS_RUNNING=true;setTimeout(pollProgress,1500)}
+  else{document.getElementById('statTask').textContent='空闲';document.getElementById('progressBar').style.display='none';document.getElementById('progressInfo').style.display='none';
+    if(WAS_RUNNING){WAS_RUNNING=false;goPage(PAGE);loadStats();loadTokens()}else{loadStats()}}
+})}
+function loadStats(){fetch('/api/stats').then(function(r){return r.json()}).then(function(d){document.getElementById('statTotal').textContent=d.total;document.getElementById('statContracts').textContent=d.contracts||0;document.getElementById('statStarred').textContent=(d.starred||0)+' / '+(d.starred_contracts||0)+'合同'})}
+function loadTokens(){fetch('/api/tokens').then(function(r){return r.json()}).then(function(d){document.getElementById('tokTotal').textContent=(d.total_tokens||0).toLocaleString();document.getElementById('tokCalls').textContent=d.total_calls||0;document.getElementById('tokCost').textContent='¥'+(d.cost_rmb||0).toFixed(4)})}
+
+// === Calendar ===
+var _availDates=[],_calYear,_calMonth,_calTarget;
+function loadDates(){fetch('/api/dates').then(function(r){return r.json()}).then(function(d){_availDates=d.dates||[]})}
+function calOpen(inp){_calTarget=inp;var v=inp.value||'',d=new Date();if(v){var p=v.split('-');d=new Date(+p[0],+p[1]-1,+p[2])}_calYear=d.getFullYear();_calMonth=d.getMonth();calRender();var r=inp.getBoundingClientRect();var pop=document.getElementById('calPopup');pop.style.top=(r.bottom+4)+'px';pop.style.left=r.left+'px';pop.classList.add('show')}
+function calClose(){document.getElementById('calPopup').classList.remove('show')}
+function calShift(m){_calMonth+=m;if(_calMonth<0){_calYear--;_calMonth=11}else if(_calMonth>11){_calYear++;_calMonth=0}calRender()}
+function calRender(){
+  document.getElementById('calMonth').textContent=_calYear+'年'+(_calMonth+1)+'月';
+  var fd=new Date(_calYear,_calMonth,1),startDow=fd.getDay();
+  var daysIn=new Date(_calYear,_calMonth+1,0).getDate();
+  var today=new Date(),todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  var h='';for(var i=0;i<startDow;i++)h+='<span class="cal-day off"></span>';
+  for(var d=1;d<=daysIn;d++){
+    var ds=_calYear+'-'+String(_calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var cls='cal-day';if(ds===todayStr)cls+=' today';if(_calTarget&&_calTarget.value===ds)cls+=' sel';
+    var dot=_availDates.indexOf(ds)>=0?'<span class="cal-dot"></span>':'';
+    h+='<span class="'+cls+'" data-ds="'+ds+'">'+d+dot+'</span>';
+  }
+  document.getElementById('calDays').innerHTML=h;
+}
+document.getElementById('calDays').addEventListener('click',function(e){var s=e.target.closest('.cal-day');if(!s||s.classList.contains('off'))return;if(_calTarget){_calTarget.value=s.dataset.ds}calClose()});
+document.addEventListener('click',function(e){if(!e.target.closest('.cal-popup')&&!e.target.closest('.dp-input'))calClose()});
+document.querySelectorAll('.dp-input').forEach(function(inp){inp.addEventListener('click',function(){calOpen(this)})});
+
+// === User Management ===
+function showUsers(){document.getElementById('userModal').classList.add('show');loadUsers()}
+function loadUsers(){
+  fetch('/api/users').then(function(r){return r.json()}).then(function(d){
+    var h='';(d.users||[]).forEach(function(u){
+      h+='<tr><td style="padding:6px 8px;border-bottom:1px solid var(--border2)">'+u.id+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:1px solid var(--border2)">'+esc(u.username)+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:1px solid var(--border2)">'+esc(u.role)+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:1px solid var(--border2)">'
+        +('<button class="btn-sm" style="background:var(--primary);color:#fff;margin-right:4px" onclick="doResetPw('+u.id+',\''+esc(u.username)+'\')">重置密码</button>')
+        +(u.username!=='admin'?'<button class="btn-sm btn-del" onclick="doDeleteUser('+u.id+',\''+esc(u.username)+'\')">删除</button>':'<span style="color:var(--text3);font-size:11px">不可删除</span>')
+        +'</td></tr>';
+    });
+    document.getElementById('userTbody').innerHTML=h||'<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text3)">无用户</td></tr>';
+  });
+}
+function doCreateUser(){
+  var u=document.getElementById('newUsername').value.trim(),p=document.getElementById('newPassword').value,r=document.getElementById('newRole').value;
+  if(!u||!p){alert('用户名和密码不能为空');return}
+  fetch('/api/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p,role:r})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.ok){document.getElementById('newUsername').value='';document.getElementById('newPassword').value='';loadUsers()}
+    else alert(d.msg||'创建失败');
+  });
+}
+function doDeleteUser(id,name){
+  if(!confirm('确认删除用户 '+name+'？'))return;
+  fetch('/api/users/'+id,{method:'DELETE'}).then(function(r){return r.json()}).then(function(d){
+    if(d.ok)loadUsers();else alert(d.msg||'删除失败');
+  });
+}
+function doResetPw(id,name){
+  var pw=prompt('为 '+name+' 输入新密码（至少4位）：');
+  if(!pw)return;if(pw.length<4){alert('密码至少4位');return}
+  fetch('/api/users/'+id+'/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.ok)alert('密码已重置');else alert(d.msg||'重置失败');
+  });
+}
+
+// === Init ===
+var td=new Date().toISOString().slice(0,10);var fd=new Date();fd.setDate(fd.getDate()-30);document.getElementById('fFrom').value=fd.toISOString().slice(0,10);document.getElementById('fTo').value=td;goPage(1);loadStats();loadTokens();loadDates();setInterval(pollProgress,15000);
+</script></body></html>

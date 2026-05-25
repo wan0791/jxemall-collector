@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: jxemall
+      POSTGRES_USER: collector
+      POSTGRES_PASSWORD: collector123
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  app:
+    build: .
+    ports:
+      - "5051:5050"
+    environment:
+      DB_HOST: postgres
+      DB_NAME: jxemall
+      DB_USER: collector
+      DB_PASSWORD: collector123
+      SECRET_KEY: jxemall-2026-prod-secret-change-me
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: https://api.deepseek.com
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  pgdata:
