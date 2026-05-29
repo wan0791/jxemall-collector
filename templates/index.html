@@ -166,7 +166,8 @@ a.ext{color:var(--primary);text-decoration:none;font-weight:500}a.ext:hover{text
 <div class="modal-overlay" id="exportModal"><div class="modal">
 <h3>导出 Excel</h3>
 <div class="row"><div class="field"><label>开始日期</label><input type="text" class="dp-input" id="eFrom"></div><div class="field"><label>结束日期</label><input type="text" class="dp-input" id="eTo"></div></div>
-<div class="field" style="margin-bottom:14px"><label>城市</label><select id="eCity"><option value="">全部</option><option value="南昌">南昌</option><option value="九江">九江</option><option value="上饶">上饶</option><option value="鹰潭">鹰潭</option><option value="景德镇">景德镇</option><option value="宜春">宜春</option><option value="萍乡">萍乡</option></select></div>
+<div class="row"><div class="field"><label>城市</label><select id="eCity"><option value="">全部</option><option value="南昌">南昌</option><option value="九江">九江</option><option value="上饶">上饶</option><option value="鹰潭">鹰潭</option><option value="景德镇">景德镇</option><option value="宜春">宜春</option><option value="萍乡">萍乡</option></select></div>
+<div class="field"><label>标记</label><select id="eMark"><option value="">全部</option><option value="starred">★ 关注</option><option value="ignored">⊘ 不关注</option><option value="unmarked">☆ 未标记</option></select></div></div>
 <div class="actions"><button class="btn-outline" onclick="document.getElementById('exportModal').classList.remove('show')">取消</button><button class="btn-primary" onclick="doExport()">导出</button></div>
 </div></div>
 
@@ -339,8 +340,8 @@ function getCities(){var cs=[];document.querySelectorAll('#cityChips .chip.on').
 function startCollect(){var f=document.getElementById('cFrom').value,t=document.getElementById('cTo').value;var days=(new Date(t)-new Date(f))/86400000;if(days>30){alert('日期范围不能超过30天');return}if(days<0){alert('开始日期不能晚于结束日期');return}var cities=getCities();fetch('/api/collect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:f,to:t,cities:cities})}).then(function(r){return r.json()}).then(function(d){alert(d.msg);document.getElementById('collectModal').classList.remove('show');pollProgress()})}
 
 // === Export ===
-function showExport(){var d=new Date();var t=d.toISOString().slice(0,10);d.setDate(d.getDate()-15);document.getElementById('eFrom').value=d.toISOString().slice(0,10);document.getElementById('eTo').value=t;document.getElementById('eCity').value=document.getElementById('fCity').value;document.getElementById('exportModal').classList.add('show')}
-function doExport(){var f=document.getElementById('eFrom').value,t=document.getElementById('eTo').value,city=document.getElementById('eCity').value;document.getElementById('exportModal').classList.remove('show');window.open('/api/export?from='+encodeURIComponent(f)+'&to='+encodeURIComponent(t)+'&city='+encodeURIComponent(city))}
+function showExport(){var d=new Date();var t=d.toISOString().slice(0,10);d.setDate(d.getDate()-15);document.getElementById('eFrom').value=d.toISOString().slice(0,10);document.getElementById('eTo').value=t;document.getElementById('eCity').value=document.getElementById('fCity').value;document.getElementById('eMark').value=document.getElementById('fMark').value;document.getElementById('exportModal').classList.add('show')}
+function doExport(){var f=document.getElementById('eFrom').value,t=document.getElementById('eTo').value,city=document.getElementById('eCity').value,mark=document.getElementById('eMark').value;document.getElementById('exportModal').classList.remove('show');window.open('/api/export?from='+encodeURIComponent(f)+'&to='+encodeURIComponent(t)+'&city='+encodeURIComponent(city)+'&mark='+encodeURIComponent(mark))}
 
 // === Progress ===
 var WAS_RUNNING=false;

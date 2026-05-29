@@ -97,10 +97,10 @@ def _append_row(ws, rd):
         ws.cell(row=rn, column=link_col).alignment = Alignment(vertical='center')
 
 
-def export(date_from=None, date_to=None, city=None, computer_only=False):
+def export(date_from=None, date_to=None, city=None, computer_only=False, mark=None):
     """导出 Excel"""
     rows, total, _ = db.query_contracts(
-        date_from, date_to, city, computer_only, limit=100000
+        date_from, date_to, city, computer_only, mark=mark, limit=100000
     )
     if not rows:
         return None

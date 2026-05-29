@@ -191,7 +191,8 @@ def api_export():
     dfrom = request.args.get('from', '')
     dto = request.args.get('to', '')
     city = request.args.get('city', '')
-    path = exporter.export(dfrom or None, dto or None, city or None)
+    mark = request.args.get('mark', '')
+    path = exporter.export(dfrom or None, dto or None, city or None, mark=mark or None)
     if not path: return jsonify({"ok": False, "msg": "无数据"})
     return send_file(path, as_attachment=True)
 
